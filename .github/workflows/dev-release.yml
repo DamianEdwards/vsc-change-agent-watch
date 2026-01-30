@@ -45,6 +45,16 @@ jobs:
           VSIX_FILE=$(ls *.vsix)
           echo "filename=${VSIX_FILE}" >> $GITHUB_OUTPUT
 
+      - name: Delete existing release assets
+        run: |
+          # Get all assets from the dev release and delete them
+          gh release view dev --json assets -q '.assets[].name' | while read -r asset; do
+            echo "Deleting asset: $asset"
+            gh release delete-asset dev "$asset" --yes || true
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Update dev release
         uses: softprops/action-gh-release@v1
         with:
