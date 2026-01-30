@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { minimatch } from 'minimatch';
+import ignore, { Ignore } from 'ignore';
 import { ConfigurationManager } from './configuration';
 import { debounce, Debouncer } from './debounce';
 
@@ -17,6 +20,7 @@ export class ChangeFollower implements vscode.Disposable {
     private processChangesDebouncer: Debouncer | undefined;
     private highlightDecorationType: vscode.TextEditorDecorationType | undefined;
     private activeHighlights: Map<string, NodeJS.Timeout> = new Map();
+    private gitignoreCache: Map<string, Ignore> = new Map();
 
     constructor(configManager: ConfigurationManager) {
         this.configManager = configManager;
@@ -61,6 +65,7 @@ export class ChangeFollower implements vscode.Disposable {
     onConfigurationChanged(): void {
         this.setupDebouncer();
         this.setupHighlightDecoration();
+        this.gitignoreCache.clear();
     }
 
     private setupDebouncer(): void {
@@ -182,6 +187,11 @@ export class ChangeFollower implements vscode.Disposable {
             }
         }
 
+        // Check .gitignore if enabled
+        if (this.configManager.respectGitignore && this.isIgnoredByGitignore(uri)) {
+            return false;
+        }
+
         // Check include patterns
         for (const pattern of this.configManager.includePatterns) {
             if (minimatch(relativePath, pattern, { dot: true })) {
@@ -190,6 +200,44 @@ export class ChangeFollower implements vscode.Disposable {
         }
 
         return false;
+    }
+
+    private isIgnoredByGitignore(uri: vscode.Uri): boolean {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        if (!workspaceFolder) {
+            return false;
+        }
+
+        const workspaceRoot = workspaceFolder.uri.fsPath;
+        const ig = this.getGitignore(workspaceRoot);
+        if (!ig) {
+            return false;
+        }
+
+        const relativePath = path.relative(workspaceRoot, uri.fsPath);
+        // Normalize path separators for cross-platform compatibility
+        const normalizedPath = relativePath.split(path.sep).join('/');
+        return ig.ignores(normalizedPath);
+    }
+
+    private getGitignore(workspaceRoot: string): Ignore | undefined {
+        if (this.gitignoreCache.has(workspaceRoot)) {
+            return this.gitignoreCache.get(workspaceRoot);
+        }
+
+        const gitignorePath = path.join(workspaceRoot, '.gitignore');
+        try {
+            if (fs.existsSync(gitignorePath)) {
+                const content = fs.readFileSync(gitignorePath, 'utf8');
+                const ig = ignore().add(content);
+                this.gitignoreCache.set(workspaceRoot, ig);
+                return ig;
+            }
+        } catch {
+            // Failed to read .gitignore, continue without it
+        }
+
+        return undefined;
     }
 
     private queueChange(uri: vscode.Uri, ranges: vscode.Range[]): void {

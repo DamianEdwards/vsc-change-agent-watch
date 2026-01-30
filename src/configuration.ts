@@ -36,4 +36,8 @@ export class ConfigurationManager {
     get highlightDuration(): number {
         return this.config.get<number>('highlightDuration', 2000);
     }
+
+    get respectGitignore(): boolean {
+        return this.config.get<boolean>('respectGitignore', true);
+    }
 }
