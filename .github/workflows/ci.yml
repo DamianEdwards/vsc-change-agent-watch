@@ -32,17 +32,17 @@ jobs:
       - name: Compile
         run: npm run compile
 
-      - name: Run tests
-        run: npm test
-        if: runner.os == 'Linux'
-        env:
-          DISPLAY: ':99.0'
-
       - name: Start Xvfb (Linux)
         run: |
           sudo apt-get install -y xvfb
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         if: runner.os == 'Linux'
+
+      - name: Run tests
+        run: npm test
+        if: runner.os == 'Linux'
+        env:
+          DISPLAY: ':99.0'
 
   package:
     needs: build
