@@ -29,15 +29,15 @@ jobs:
       - name: Compile
         run: npm run compile
 
-      - name: Run tests
-        run: npm test
-        env:
-          DISPLAY: ':99.0'
-
       - name: Start Xvfb
         run: |
           sudo apt-get install -y xvfb
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+
+      - name: Run tests
+        run: npm test
+        env:
+          DISPLAY: ':99.0'
 
       - name: Extract version from tag
         id: version
