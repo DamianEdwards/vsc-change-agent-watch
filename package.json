@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "publisher": "DamianEdwards",
   "license": "MIT",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/DamianEdwards/vsc-change-agent-watch"
