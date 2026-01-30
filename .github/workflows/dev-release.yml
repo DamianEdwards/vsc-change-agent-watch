@@ -1,0 +1,72 @@
+name: Dev Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  dev-release:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Generate dev version
+        id: version
+        run: |
+          BASE_VERSION=$(node -p "require('./package.json').version")
+          DEV_VERSION="${BASE_VERSION}-dev.${GITHUB_RUN_NUMBER}"
+          echo "version=${DEV_VERSION}" >> $GITHUB_OUTPUT
+          npm version $DEV_VERSION --no-git-tag-version
+
+      - name: Package extension
+        run: npm run package
+
+      - name: Get VSIX filename
+        id: vsix
+        run: |
+          VSIX_FILE=$(ls *.vsix)
+          echo "filename=${VSIX_FILE}" >> $GITHUB_OUTPUT
+
+      - name: Update dev release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: dev
+          name: Development Build
+          body: |
+            ## Latest Development Build
+
+            **Version:** ${{ steps.version.outputs.version }}
+            **Commit:** ${{ github.sha }}
+            **Built:** ${{ github.event.head_commit.timestamp }}
+
+            This is an automatically updated development release containing the latest build from the main branch.
+
+            ### Installation
+
+            1. Download the `.vsix` file below
+            2. In VS Code, open Command Palette (Ctrl+Shift+P)
+            3. Run "Extensions: Install from VSIX..."
+            4. Select the downloaded file
+          files: ${{ steps.vsix.outputs.filename }}
+          prerelease: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

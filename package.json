@@ -1,0 +1,123 @@
+{
+  "name": "file-change-follower",
+  "displayName": "File Change Follower",
+  "description": "Follow file changes in real-time - automatically opens and scrolls to edits as they happen. Perfect for watching CLI-based coding agents work.",
+  "version": "0.1.0",
+  "publisher": "DamianEdwards",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DamianEdwards/vsc-change-agent-watch"
+  },
+  "bugs": {
+    "url": "https://github.com/DamianEdwards/vsc-change-agent-watch/issues"
+  },
+  "homepage": "https://github.com/DamianEdwards/vsc-change-agent-watch#readme",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "file watcher",
+    "coding agent",
+    "copilot",
+    "live edit",
+    "follow mode"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "fileChangeFollower.toggle",
+        "title": "File Change Follower: Toggle Follow Mode"
+      },
+      {
+        "command": "fileChangeFollower.enable",
+        "title": "File Change Follower: Enable Follow Mode"
+      },
+      {
+        "command": "fileChangeFollower.disable",
+        "title": "File Change Follower: Disable Follow Mode"
+      }
+    ],
+    "configuration": {
+      "title": "File Change Follower",
+      "properties": {
+        "fileChangeFollower.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable follow mode on startup"
+        },
+        "fileChangeFollower.includePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/*"
+          ],
+          "description": "Glob patterns for files to include (e.g., ['**/*.ts', 'src/**/*'])"
+        },
+        "fileChangeFollower.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/out/**",
+            "**/dist/**",
+            "**/*.vsix"
+          ],
+          "description": "Glob patterns for files to exclude"
+        },
+        "fileChangeFollower.debounceMs": {
+          "type": "number",
+          "default": 150,
+          "minimum": 0,
+          "maximum": 2000,
+          "description": "Debounce interval in milliseconds for file change events"
+        },
+        "fileChangeFollower.highlightDuration": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 0,
+          "maximum": 10000,
+          "description": "Duration in milliseconds to highlight changed lines (0 to disable)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "pretest": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.56.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "minimatch": "^9.0.3"
+  }
+}
