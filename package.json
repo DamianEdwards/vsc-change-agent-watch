@@ -77,6 +77,11 @@
           ],
           "description": "Glob patterns for files to exclude"
         },
+        "fileChangeFollower.respectGitignore": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ignore files that are listed in .gitignore"
+        },
         "fileChangeFollower.debounceMs": {
           "type": "number",
           "default": 150,
@@ -118,6 +123,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "ignore": "^7.0.5",
     "minimatch": "^9.0.3"
   }
 }
