@@ -44,8 +44,70 @@
       {
         "command": "fileChangeFollower.disable",
         "title": "File Change Follower: Disable Follow Mode"
+      },
+      {
+        "command": "fileChangeFollower.startRecording",
+        "title": "File Change Follower: Start Recording Session"
+      },
+      {
+        "command": "fileChangeFollower.stopRecording",
+        "title": "File Change Follower: Stop Recording and Save"
+      },
+      {
+        "command": "fileChangeFollower.openRecording",
+        "title": "File Change Follower: Open Recording File"
+      },
+      {
+        "command": "fileChangeFollower.playRecording",
+        "title": "File Change Follower: Play Recording"
+      },
+      {
+        "command": "fileChangeFollower.pausePlayback",
+        "title": "File Change Follower: Pause Playback"
+      },
+      {
+        "command": "fileChangeFollower.stopPlayback",
+        "title": "File Change Follower: Stop Playback"
+      },
+      {
+        "command": "fileChangeFollower.skipForward",
+        "title": "File Change Follower: Skip to Next Event"
+      },
+      {
+        "command": "fileChangeFollower.skipBackward",
+        "title": "File Change Follower: Skip to Previous Event"
+      },
+      {
+        "command": "fileChangeFollower.speedUp",
+        "title": "File Change Follower: Increase Playback Speed"
+      },
+      {
+        "command": "fileChangeFollower.slowDown",
+        "title": "File Change Follower: Decrease Playback Speed"
+      },
+      {
+        "command": "fileChangeFollower.toggleLiveDelay",
+        "title": "File Change Follower: Toggle Live Delay Mode"
+      },
+      {
+        "command": "fileChangeFollower.catchUpToLive",
+        "title": "File Change Follower: Catch Up to Live"
+      },
+      {
+        "command": "fileChangeFollower.showTimeline",
+        "title": "File Change Follower: Show Timeline Panel"
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "fileChangeFollower.timeline",
+          "name": "Playback Timeline",
+          "when": "fileChangeFollower.hasRecording"
+        }
+      ]
+    },
     "configuration": {
       "title": "File Change Follower",
       "properties": {
@@ -96,6 +158,24 @@
           "minimum": 0,
           "maximum": 10000,
           "description": "Duration in milliseconds to highlight changed lines (0 to disable)"
+        },
+        "fileChangeFollower.recordingsPath": {
+          "type": "string",
+          "default": ".recordings",
+          "description": "Directory for saved session recordings (relative to workspace root)"
+        },
+        "fileChangeFollower.liveDelaySeconds": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 300,
+          "description": "Delay in seconds for live delay mode (0 to disable)"
+        },
+        "fileChangeFollower.defaultPlaybackSpeed": {
+          "type": "number",
+          "default": 1,
+          "enum": [0.25, 0.5, 1, 2, 4],
+          "description": "Default playback speed multiplier"
         }
       }
     }

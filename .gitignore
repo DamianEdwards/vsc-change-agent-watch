@@ -30,6 +30,9 @@ npm-debug.log*
 coverage/
 .nyc_output/
 
+# VS Code test runner
+.vscode-test/
+
 # Environment
 .env
 .env.local
