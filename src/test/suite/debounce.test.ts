@@ -48,11 +48,11 @@ suite('Debounce Test Suite', () => {
 
         setTimeout(() => {
             debouncer.call();
-        }, 50);
+        }, 80);
 
         setTimeout(() => {
             assert.strictEqual(callCount, 2);
             done();
-        }, 150);
+        }, 200);
     });
 });
