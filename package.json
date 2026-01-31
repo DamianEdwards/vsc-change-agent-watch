@@ -2,7 +2,7 @@
   "name": "file-change-follower",
   "displayName": "File Change Follower",
   "description": "Follow file changes in real-time - automatically opens and scrolls to edits as they happen. Perfect for watching CLI-based coding agents work.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "DamianEdwards",
   "license": "MIT",
   "icon": "icon.png",
