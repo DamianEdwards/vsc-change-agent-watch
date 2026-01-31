@@ -9,6 +9,8 @@ permissions:
 
 jobs:
   dev-release:
+    # Only run on direct pushes to main, not from PR merges or other refs
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: dev
 
