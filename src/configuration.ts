@@ -40,4 +40,16 @@ export class ConfigurationManager {
     get respectGitignore(): boolean {
         return this.config.get<boolean>('respectGitignore', true);
     }
+
+    get recordingsPath(): string {
+        return this.config.get<string>('recordingsPath', '.recordings');
+    }
+
+    get liveDelaySeconds(): number {
+        return this.config.get<number>('liveDelaySeconds', 0);
+    }
+
+    get defaultPlaybackSpeed(): number {
+        return this.config.get<number>('defaultPlaybackSpeed', 1);
+    }
 }
