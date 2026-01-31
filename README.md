@@ -6,9 +6,13 @@ A VS Code extension that follows file changes in real-time, automatically openin
 
 - **Real-time file following**: Automatically opens and scrolls to files as they're edited
 - **Change highlighting**: Briefly highlights the lines that changed
+- **Recording & Playback**: Record file change sessions and play them back later
+- **Timeline Panel**: Visual timeline for navigating recordings
+- **Live Delay Mode**: Buffer live events with configurable delay
 - **Status bar integration**: See at a glance if follow mode is active, click to toggle
 - **Command palette**: Quick access to enable, disable, or toggle follow mode
 - **Configurable patterns**: Include or exclude files based on glob patterns
+- **Gitignore support**: Automatically respects `.gitignore` patterns
 - **Debounced updates**: Prevents overwhelming the editor during rapid changes
 
 ## Use Cases
@@ -48,6 +52,19 @@ A VS Code extension that follows file changes in real-time, automatically openin
 | `File Change Follower: Toggle Follow Mode` | Toggle follow mode on/off |
 | `File Change Follower: Enable Follow Mode` | Enable follow mode |
 | `File Change Follower: Disable Follow Mode` | Disable follow mode |
+| `File Change Follower: Start Recording Session` | Start recording file changes |
+| `File Change Follower: Stop Recording and Save` | Stop recording and save to file |
+| `File Change Follower: Open Recording File` | Open a recording file (.fcfr) |
+| `File Change Follower: Play Recording` | Start playback of a recording |
+| `File Change Follower: Pause Playback` | Pause the current playback |
+| `File Change Follower: Stop Playback` | Stop playback completely |
+| `File Change Follower: Skip to Next Event` | Jump to the next event in recording |
+| `File Change Follower: Skip to Previous Event` | Jump to the previous event |
+| `File Change Follower: Increase Playback Speed` | Speed up playback (up to 4x) |
+| `File Change Follower: Decrease Playback Speed` | Slow down playback (down to 0.25x) |
+| `File Change Follower: Toggle Live Delay Mode` | Toggle buffered live event mode |
+| `File Change Follower: Catch Up to Live` | Jump to real-time in live delay mode |
+| `File Change Follower: Show Timeline Panel` | Open the visual timeline panel |
 
 ### Status Bar
 
@@ -66,8 +83,12 @@ Configure the extension in VS Code settings:
 | `fileChangeFollower.enabled` | `false` | Enable follow mode on startup |
 | `fileChangeFollower.includePatterns` | `["**/*"]` | Glob patterns for files to include |
 | `fileChangeFollower.excludePatterns` | `["**/node_modules/**", "**/.git/**", ...]` | Glob patterns for files to exclude |
+| `fileChangeFollower.respectGitignore` | `true` | Ignore files listed in .gitignore |
 | `fileChangeFollower.debounceMs` | `150` | Debounce interval (0-2000ms) |
 | `fileChangeFollower.highlightDuration` | `2000` | How long to highlight changes (0 to disable) |
+| `fileChangeFollower.recordingsPath` | `".recordings"` | Directory for saved recordings |
+| `fileChangeFollower.liveDelaySeconds` | `0` | Delay for live delay mode (0 = disabled) |
+| `fileChangeFollower.defaultPlaybackSpeed` | `1` | Default playback speed multiplier |
 
 ### Example Settings
 
@@ -81,9 +102,40 @@ Configure the extension in VS Code settings:
     "**/out/**"
   ],
   "fileChangeFollower.debounceMs": 150,
-  "fileChangeFollower.highlightDuration": 2000
+  "fileChangeFollower.highlightDuration": 2000,
+  "fileChangeFollower.recordingsPath": ".recordings",
+  "fileChangeFollower.liveDelaySeconds": 5,
+  "fileChangeFollower.defaultPlaybackSpeed": 1
 }
 ```
+
+## Recording & Playback
+
+The extension supports recording file change sessions and playing them back later.
+
+### Recording
+
+1. Run **"Start Recording Session"** to begin capturing file changes
+2. Make changes to files in your workspace (or let a coding agent do it)
+3. Run **"Stop Recording and Save"** to save the recording
+
+Recordings are saved as `.fcfr` files (JSON Lines format) in the configured `recordingsPath` directory.
+
+### Playback
+
+1. Run **"Open Recording File"** to load a `.fcfr` file
+2. Run **"Play Recording"** to start playback
+3. Use speed controls (0.25x to 4x) to adjust playback speed
+4. Use skip commands to navigate between events
+5. Open the **Timeline Panel** for visual navigation
+
+### Live Delay Mode
+
+Live delay mode buffers incoming file changes, allowing you to watch events with a configurable delay. This is useful when you want to follow along at your own pace while an agent is actively working.
+
+1. Set `liveDelaySeconds` to a value greater than 0 (e.g., 5 seconds)
+2. Run **"Toggle Live Delay Mode"** to enable
+3. Run **"Catch Up to Live"** to jump to real-time when needed
 
 ## How It Works
 
