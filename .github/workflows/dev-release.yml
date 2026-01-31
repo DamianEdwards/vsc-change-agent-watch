@@ -69,7 +69,41 @@ jobs:
 
             This is an automatically updated development release containing the latest build from the main branch.
 
-            ### Installation
+            ### Quick Install
+
+            Copy and paste one of the following commands to download and install the extension:
+
+            <details>
+            <summary><strong>VS Code</strong></summary>
+
+            **Bash (macOS/Linux):**
+            ```bash
+            curl -sL $(curl -s https://api.github.com/repos/DamianEdwards/vsc-change-agent-watch/releases/tags/dev | grep -o '"browser_download_url": *"[^"]*\.vsix"' | cut -d'"' -f4) -o /tmp/file-change-follower.vsix && code --install-extension /tmp/file-change-follower.vsix && rm /tmp/file-change-follower.vsix
+            ```
+
+            **PowerShell (Windows/macOS/Linux):**
+            ```powershell
+            $u = (Invoke-RestMethod "https://api.github.com/repos/DamianEdwards/vsc-change-agent-watch/releases/tags/dev").assets[0].browser_download_url; $f = Join-Path ([IO.Path]::GetTempPath()) "file-change-follower.vsix"; Invoke-WebRequest $u -OutFile $f; code --install-extension $f; Remove-Item $f
+            ```
+
+            </details>
+
+            <details>
+            <summary><strong>VS Code Insiders</strong></summary>
+
+            **Bash (macOS/Linux):**
+            ```bash
+            curl -sL $(curl -s https://api.github.com/repos/DamianEdwards/vsc-change-agent-watch/releases/tags/dev | grep -o '"browser_download_url": *"[^"]*\.vsix"' | cut -d'"' -f4) -o /tmp/file-change-follower.vsix && code-insiders --install-extension /tmp/file-change-follower.vsix && rm /tmp/file-change-follower.vsix
+            ```
+
+            **PowerShell (Windows/macOS/Linux):**
+            ```powershell
+            $u = (Invoke-RestMethod "https://api.github.com/repos/DamianEdwards/vsc-change-agent-watch/releases/tags/dev").assets[0].browser_download_url; $f = Join-Path ([IO.Path]::GetTempPath()) "file-change-follower.vsix"; Invoke-WebRequest $u -OutFile $f; code-insiders --install-extension $f; Remove-Item $f
+            ```
+
+            </details>
+
+            ### Manual Installation
 
             1. Download the `.vsix` file below
             2. In VS Code, open Command Palette (Ctrl+Shift+P)
