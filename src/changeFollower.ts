@@ -21,6 +21,8 @@ export class ChangeFollower implements vscode.Disposable {
     private highlightDecorationType: vscode.TextEditorDecorationType | undefined;
     private activeHighlights: Map<string, NodeJS.Timeout> = new Map();
     private gitignoreCache: Map<string, Ignore> = new Map();
+    private readonly _onDidAutoDisable = new vscode.EventEmitter<void>();
+    readonly onDidAutoDisable = this._onDidAutoDisable.event;
 
     constructor(configManager: ConfigurationManager) {
         this.configManager = configManager;
@@ -50,7 +52,7 @@ export class ChangeFollower implements vscode.Disposable {
         vscode.window.showInformationMessage('File Change Follower: Follow mode enabled');
     }
 
-    disable(): void {
+    disable(silent = false): void {
         if (!this._isEnabled) {
             return;
         }
@@ -59,7 +61,9 @@ export class ChangeFollower implements vscode.Disposable {
         this.clearListeners();
         this.pendingChanges.clear();
         this.clearAllHighlights();
-        vscode.window.showInformationMessage('File Change Follower: Follow mode disabled');
+        if (!silent) {
+            vscode.window.showInformationMessage('File Change Follower: Follow mode disabled');
+        }
     }
 
     onConfigurationChanged(): void {
@@ -130,6 +134,19 @@ export class ChangeFollower implements vscode.Disposable {
         // Skip if no content changes
         if (event.contentChanges.length === 0) {
             return;
+        }
+
+        // Detect manual edits: if the changed document is the active editor's document,
+        // the user is actively editing (the extension opens docs with preserveFocus: true,
+        // so the active editor only matches when the user explicitly switches to it)
+        if (this.configManager.disableOnManualEdit) {
+            const activeEditor = vscode.window.activeTextEditor;
+            if (activeEditor && activeEditor.document.uri.toString() === uri.toString()) {
+                this.disable(true);
+                this._onDidAutoDisable.fire();
+                vscode.window.showInformationMessage('File Change Follower: Follow mode auto-disabled due to manual edit');
+                return;
+            }
         }
 
         // Check if file matches patterns
@@ -360,6 +377,7 @@ export class ChangeFollower implements vscode.Disposable {
     dispose(): void {
         this.disable();
         this.highlightDecorationType?.dispose();
+        this._onDidAutoDisable.dispose();
         this.clearListeners();
     }
 }

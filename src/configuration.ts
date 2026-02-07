@@ -29,6 +29,10 @@ export class ConfigurationManager {
         ]);
     }
 
+    get disableOnManualEdit(): boolean {
+        return this.config.get<boolean>('disableOnManualEdit', true);
+    }
+
     get debounceMs(): number {
         return this.config.get<number>('debounceMs', 150);
     }
