@@ -193,6 +193,11 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     );
 
+    // Listen for auto-disable events from ChangeFollower
+    const autoDisableListener = changeFollower.onDidAutoDisable(() => {
+        updateStatusBar();
+    });
+
     // Listen to configuration changes
     const configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
         if (e.affectsConfiguration('fileChangeFollower')) {
@@ -219,6 +224,7 @@ export function activate(context: vscode.ExtensionContext): void {
         catchUpToLiveCommand,
         showTimelineCommand,
         configChangeListener,
+        autoDisableListener,
         playerStateListener,
         timelineView,
         statusBarManager,

@@ -145,6 +145,11 @@
           "default": true,
           "description": "Ignore files that are listed in .gitignore"
         },
+        "fileChangeFollower.disableOnManualEdit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically disable follow mode when a manual edit is made in the editor"
+        },
         "fileChangeFollower.debounceMs": {
           "type": "number",
           "default": 150,
