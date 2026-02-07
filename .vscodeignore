@@ -8,6 +8,7 @@ tsconfig.json
 **/*.map
 .github/**
 *.vsix
+**/*.pdn
 out/test/**
 node_modules/**
 !node_modules/minimatch/**

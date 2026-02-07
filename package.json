@@ -2,10 +2,10 @@
   "name": "file-change-follower",
   "displayName": "File Change Follower",
   "description": "Follow file changes in real-time - automatically opens and scrolls to edits as they happen. Perfect for watching CLI-based coding agents work.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "DamianEdwards",
   "license": "MIT",
-  "icon": "icon.png",
+  "icon": "assets/icon-256x256.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/DamianEdwards/vsc-change-agent-watch"
