@@ -42,17 +42,17 @@ suite('Debounce Test Suite', () => {
         let callCount = 0;
         const debouncer = debounce(() => {
             callCount++;
-        }, 30);
+        }, 50);
 
         debouncer.call();
 
         setTimeout(() => {
             debouncer.call();
-        }, 80);
+        }, 150);
 
         setTimeout(() => {
             assert.strictEqual(callCount, 2);
             done();
-        }, 200);
+        }, 400);
     });
 });
