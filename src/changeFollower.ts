@@ -21,6 +21,8 @@ export class ChangeFollower implements vscode.Disposable {
     private highlightDecorationType: vscode.TextEditorDecorationType | undefined;
     private activeHighlights: Map<string, NodeJS.Timeout> = new Map();
     private gitignoreCache: Map<string, Ignore> = new Map();
+    private recentExternalChanges: Map<string, NodeJS.Timeout> = new Map();
+    private static readonly EXTERNAL_CHANGE_WINDOW_MS = 2000;
     private readonly _onDidAutoDisable = new vscode.EventEmitter<void>();
     readonly onDidAutoDisable = this._onDidAutoDisable.event;
 
@@ -61,6 +63,7 @@ export class ChangeFollower implements vscode.Disposable {
         this.clearListeners();
         this.pendingChanges.clear();
         this.clearAllHighlights();
+        this.clearAllExternalChangeTracking();
         if (!silent) {
             vscode.window.showInformationMessage('File Change Follower: Follow mode disabled');
         }
@@ -136,16 +139,23 @@ export class ChangeFollower implements vscode.Disposable {
             return;
         }
 
-        // Detect manual edits: if the changed document is the active editor's document,
-        // the user is actively editing (the extension opens docs with preserveFocus: true,
-        // so the active editor only matches when the user explicitly switches to it)
+        // Detect manual edits: if the changed document is the active editor's document
+        // and the change was NOT from an external file modification, the user is actively
+        // editing. External changes are tracked via the file system watcher which fires
+        // before VS Code reloads the document.
         if (this.configManager.disableOnManualEdit) {
             const activeEditor = vscode.window.activeTextEditor;
             if (activeEditor && activeEditor.document.uri.toString() === uri.toString()) {
-                this.disable(true);
-                this._onDidAutoDisable.fire();
-                vscode.window.showInformationMessage('File Change Follower: Follow mode auto-disabled due to manual edit');
-                return;
+                const key = uri.toString();
+                if (this.recentExternalChanges.has(key)) {
+                    // Change originated from disk, not the user typing
+                    this.clearExternalChangeTracking(key);
+                } else {
+                    this.disable(true);
+                    this._onDidAutoDisable.fire();
+                    vscode.window.showInformationMessage('File Change Follower: Follow mode auto-disabled due to manual edit');
+                    return;
+                }
             }
         }
 
@@ -176,6 +186,11 @@ export class ChangeFollower implements vscode.Disposable {
     }
 
     private handleFileChanged(uri: vscode.Uri): void {
+        // Track that this file was changed externally (on disk), so that when VS Code
+        // reloads the document and fires onDidChangeTextDocument, we don't mistake
+        // it for a manual user edit
+        this.trackExternalChange(uri);
+
         // File changed externally - only handle if not already open
         const openDocument = vscode.workspace.textDocuments.find(
             doc => doc.uri.toString() === uri.toString()
@@ -255,6 +270,30 @@ export class ChangeFollower implements vscode.Disposable {
         }
 
         return undefined;
+    }
+
+    private trackExternalChange(uri: vscode.Uri): void {
+        const key = uri.toString();
+        this.clearExternalChangeTracking(key);
+        const timer = setTimeout(() => {
+            this.recentExternalChanges.delete(key);
+        }, ChangeFollower.EXTERNAL_CHANGE_WINDOW_MS);
+        this.recentExternalChanges.set(key, timer);
+    }
+
+    private clearExternalChangeTracking(key: string): void {
+        const existing = this.recentExternalChanges.get(key);
+        if (existing) {
+            clearTimeout(existing);
+            this.recentExternalChanges.delete(key);
+        }
+    }
+
+    private clearAllExternalChangeTracking(): void {
+        for (const timer of this.recentExternalChanges.values()) {
+            clearTimeout(timer);
+        }
+        this.recentExternalChanges.clear();
     }
 
     private queueChange(uri: vscode.Uri, ranges: vscode.Range[]): void {
@@ -378,6 +417,7 @@ export class ChangeFollower implements vscode.Disposable {
         this.disable();
         this.highlightDecorationType?.dispose();
         this._onDidAutoDisable.dispose();
+        this.clearAllExternalChangeTracking();
         this.clearListeners();
     }
 }

@@ -138,6 +138,41 @@ suite('ChangeFollower Auto-Disable Test Suite', () => {
         disposable.dispose();
     });
 
+    test('Should NOT auto-disable when external process modifies active editor document', async () => {
+        // This is the core bug scenario: user has a file focused, CLI agent modifies it
+        // on disk, VS Code reloads it, and follow mode should NOT be disabled.
+        changeFollower.enable();
+        assert.strictEqual(changeFollower.isEnabled, true);
+
+        // Create and open a temp file as the active editor (user is reading it)
+        const tempFile = path.join(tempDir, 'test-external-active.txt');
+        fs.writeFileSync(tempFile, 'initial content');
+        const uri = vscode.Uri.file(tempFile);
+        const doc = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(doc, { preserveFocus: false });
+
+        // Verify it's the active editor
+        assert.strictEqual(vscode.window.activeTextEditor?.document.uri.toString(), uri.toString());
+
+        // Track auto-disable event
+        let autoDisableFired = false;
+        const disposable = changeFollower.onDidAutoDisable(() => {
+            autoDisableFired = true;
+        });
+
+        // Simulate an external process (CLI agent) modifying the file on disk
+        fs.writeFileSync(tempFile, 'modified by CLI agent');
+
+        // Give time for file system watcher and document reload events to propagate
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Follow mode should still be enabled because the change was external
+        assert.strictEqual(changeFollower.isEnabled, true, 'Follow mode should remain enabled for external changes to the active editor');
+        assert.strictEqual(autoDisableFired, false, 'onDidAutoDisable should NOT have fired for external changes');
+
+        disposable.dispose();
+    });
+
     test('onDidAutoDisable event emitter fires callback', async () => {
         changeFollower.enable();
 
