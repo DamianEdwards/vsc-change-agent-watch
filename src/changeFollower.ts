@@ -340,29 +340,36 @@ export class ChangeFollower implements vscode.Disposable {
 
     private async showChange(change: PendingChange): Promise<void> {
         try {
-            // Open the document
+            if (!this._isEnabled) {
+                return;
+            }
+
             const document = await vscode.workspace.openTextDocument(change.uri);
             
-            // Show the document without stealing focus from the terminal
+            if (!this._isEnabled) {
+                return;
+            }
+
             const editor = await vscode.window.showTextDocument(document, {
                 preview: false,
                 preserveFocus: true
             });
 
-            // Find the best range to reveal (prefer last change)
+            if (!this._isEnabled || editor !== vscode.window.visibleTextEditors.find(e => e === editor)) {
+                return;
+            }
+
             const rangeToReveal = change.ranges.length > 0 
                 ? change.ranges[change.ranges.length - 1]
                 : new vscode.Range(0, 0, 0, 0);
 
-            // Scroll to the change
+            await new Promise(resolve => setTimeout(resolve, 0));
             editor.revealRange(rangeToReveal, vscode.TextEditorRevealType.InCenter);
 
-            // Highlight the changed lines
             if (this.configManager.highlightDuration > 0 && this.highlightDecorationType) {
                 this.applyHighlight(editor, change.ranges);
             }
         } catch (error) {
-            // File might have been deleted or is binary
             console.log(`File Change Follower: Could not open ${change.uri.fsPath}:`, error);
         }
     }
