@@ -176,6 +176,11 @@
           "maximum": 300,
           "description": "Delay in seconds for live delay mode (0 to disable)"
         },
+        "fileChangeFollower.autoSaveOnChange": {
+          "type": "boolean",
+          "default": false,
+          "description": "Trigger a save command when a file change is detected, so the LSP refreshes its status"
+        },
         "fileChangeFollower.defaultPlaybackSpeed": {
           "type": "number",
           "default": 1,

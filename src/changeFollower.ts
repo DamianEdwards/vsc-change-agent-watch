@@ -361,6 +361,17 @@ export class ChangeFollower implements vscode.Disposable {
             if (this.configManager.highlightDuration > 0 && this.highlightDecorationType) {
                 this.applyHighlight(editor, change.ranges);
             }
+
+            // Trigger a save so the LSP picks up the change. The document was updated
+            // externally on disk, so this is a no-op for the buffer but causes VS Code
+            // to re-notify language servers (didSave) and refresh diagnostics.
+            if (this.configManager.autoSaveOnChange && !document.isDirty) {
+                try {
+                    await vscode.commands.executeCommand('workbench.action.files.save');
+                } catch {
+                    // Ignore save failures
+                }
+            }
         } catch (error) {
             // File might have been deleted or is binary
             console.log(`File Change Follower: Could not open ${change.uri.fsPath}:`, error);

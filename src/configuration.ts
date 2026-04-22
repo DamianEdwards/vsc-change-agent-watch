@@ -53,6 +53,10 @@ export class ConfigurationManager {
         return this.config.get<number>('liveDelaySeconds', 0);
     }
 
+    get autoSaveOnChange(): boolean {
+        return this.config.get<boolean>('autoSaveOnChange', false);
+    }
+
     get defaultPlaybackSpeed(): number {
         return this.config.get<number>('defaultPlaybackSpeed', 1);
     }
