@@ -355,7 +355,7 @@ export class ChangeFollower implements vscode.Disposable {
                 preserveFocus: true
             });
 
-            if (!this._isEnabled || editor !== vscode.window.visibleTextEditors.find(e => e === editor)) {
+            if (!this._isEnabled || !vscode.window.visibleTextEditors.includes(editor)) {
                 return;
             }
 
@@ -363,7 +363,6 @@ export class ChangeFollower implements vscode.Disposable {
                 ? change.ranges[change.ranges.length - 1]
                 : new vscode.Range(0, 0, 0, 0);
 
-            await new Promise(resolve => setTimeout(resolve, 0));
             editor.revealRange(rangeToReveal, vscode.TextEditorRevealType.InCenter);
 
             if (this.configManager.highlightDuration > 0 && this.highlightDecorationType) {
