@@ -41,6 +41,8 @@ vsc-change-agent-watch/
 
 ## Build & Development Commands
 
+Use Node.js 22 or newer for development and testing; `@vscode/test-electron` requires it.
+
 ```bash
 # Install dependencies
 npm install

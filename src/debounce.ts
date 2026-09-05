@@ -14,9 +14,13 @@ export function debounce(
             if (timeoutId) {
                 clearTimeout(timeoutId);
             }
-            timeoutId = setTimeout(() => {
+            timeoutId = setTimeout(async () => {
                 timeoutId = undefined;
-                fn();
+                try {
+                    await fn();
+                } catch (error) {
+                    console.error('Debounced function error:', error);
+                }
             }, delayMs);
         },
         cancel: () => {
