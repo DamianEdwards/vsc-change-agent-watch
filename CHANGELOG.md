@@ -5,6 +5,14 @@ All notable changes to the "File Change Follower" extension will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Opt-in `fileChangeFollower.autoCloseOnSwitch` setting to close other tabs opened
+  by live follow mode while preserving existing, manually opened, dirty, pinned,
+  and user-moved tabs.
+
 ## [0.1.0] - 2026-01-30
 
 ### Added

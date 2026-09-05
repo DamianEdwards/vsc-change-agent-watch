@@ -22,6 +22,10 @@ export class ChangeFollower implements vscode.Disposable {
     private activeHighlights: Map<string, NodeJS.Timeout> = new Map();
     private gitignoreCache: Map<string, Ignore> = new Map();
     private recentExternalChanges: Map<string, NodeJS.Timeout> = new Map();
+    private readonly autoOpenedTabs = new Map<vscode.Tab, vscode.TabGroup>();
+    private navigationQueue: Promise<void> = Promise.resolve();
+    private followSession = 0;
+    private tabTrackingGeneration = 0;
     private static readonly EXTERNAL_CHANGE_WINDOW_MS = 2000;
     private readonly _onDidAutoDisable = new vscode.EventEmitter<void>();
     readonly onDidAutoDisable = this._onDidAutoDisable.event;
@@ -50,6 +54,7 @@ export class ChangeFollower implements vscode.Disposable {
         }
 
         this._isEnabled = true;
+        this.followSession++;
         this.setupListeners();
         vscode.window.showInformationMessage('File Change Follower: Follow mode enabled');
     }
@@ -60,8 +65,11 @@ export class ChangeFollower implements vscode.Disposable {
         }
 
         this._isEnabled = false;
+        this.followSession++;
+        this.processChangesDebouncer?.cancel();
         this.clearListeners();
         this.pendingChanges.clear();
+        this.clearAutoOpenedTabs();
         this.clearAllHighlights();
         this.clearAllExternalChangeTracking();
         if (!silent) {
@@ -73,13 +81,20 @@ export class ChangeFollower implements vscode.Disposable {
         this.setupDebouncer();
         this.setupHighlightDecoration();
         this.gitignoreCache.clear();
+        if (!this.configManager.autoCloseOnSwitch) {
+            this.clearAutoOpenedTabs();
+        }
     }
 
     private setupDebouncer(): void {
+        this.processChangesDebouncer?.cancel();
         this.processChangesDebouncer = debounce(
             () => this.processChanges(),
             this.configManager.debounceMs
         );
+        if (this._isEnabled && this.pendingChanges.size > 0) {
+            this.processChangesDebouncer.call();
+        }
     }
 
     private setupHighlightDecoration(): void {
@@ -116,7 +131,18 @@ export class ChangeFollower implements vscode.Disposable {
             this.handleFileChanged(uri);
         });
 
-        this.disposables.push(textChangeListener, fileWatcher, createListener, changeListener);
+        const tabChangeListener = vscode.window.tabGroups.onDidChangeTabs((event) => {
+            for (const tab of event.closed) {
+                this.autoOpenedTabs.delete(tab);
+            }
+            for (const tab of event.changed) {
+                if (tab.isDirty || tab.isPinned || this.autoOpenedTabs.get(tab) !== tab.group) {
+                    this.autoOpenedTabs.delete(tab);
+                }
+            }
+        });
+
+        this.disposables.push(textChangeListener, fileWatcher, createListener, changeListener, tabChangeListener);
     }
 
     private clearListeners(): void {
@@ -335,19 +361,44 @@ export class ChangeFollower implements vscode.Disposable {
             return;
         }
 
-        await this.showChange(mostRecent);
+        const changeToShow = mostRecent;
+        const session = this.followSession;
+        // Opening and closing tabs must finish in order, even across debounce intervals.
+        this.navigationQueue = this.navigationQueue.then(async () => {
+            if (this.isCurrentSession(session)) {
+                await this.showChange(changeToShow, session);
+            }
+        });
+        await this.navigationQueue;
     }
 
-    private async showChange(change: PendingChange): Promise<void> {
+    private isCurrentSession(session: number): boolean {
+        return this._isEnabled && this.followSession === session;
+    }
+
+    private async showChange(change: PendingChange, session: number): Promise<void> {
         try {
             // Open the document
             const document = await vscode.workspace.openTextDocument(change.uri);
-            
+            if (!this.isCurrentSession(session)) {
+                return;
+            }
+
+            // Snapshot tabs, not documents: include background tabs and all editor groups,
+            // including tabs the user opened while the document was loading.
+            const existingTabs = this.configManager.autoCloseOnSwitch
+                ? new Set(this.getOpenTabs())
+                : undefined;
+            const trackingGeneration = this.tabTrackingGeneration;
+
             // Show the document without stealing focus from the terminal
             const editor = await vscode.window.showTextDocument(document, {
                 preview: false,
                 preserveFocus: true
             });
+            if (!this.isCurrentSession(session)) {
+                return;
+            }
 
             // Find the best range to reveal (prefer last change)
             const rangeToReveal = change.ranges.length > 0 
@@ -361,9 +412,63 @@ export class ChangeFollower implements vscode.Disposable {
             if (this.configManager.highlightDuration > 0 && this.highlightDecorationType) {
                 this.applyHighlight(editor, change.ranges);
             }
+
+            if (existingTabs && this.configManager.autoCloseOnSwitch && trackingGeneration === this.tabTrackingGeneration) {
+                const currentTab = vscode.window.tabGroups.all
+                    .find(group => group.viewColumn === editor.viewColumn)?.tabs
+                    .find(tab => tab.input instanceof vscode.TabInputText
+                        && tab.input.uri.toString() === document.uri.toString());
+                if (currentTab) {
+                    if (!existingTabs.has(currentTab) && !currentTab.isDirty && !currentTab.isPinned) {
+                        this.autoOpenedTabs.set(currentTab, currentTab.group);
+                    }
+                    await this.closeOtherAutoOpenedTabs(currentTab, session, trackingGeneration);
+                }
+            }
         } catch (error) {
             // File might have been deleted or is binary
             console.log(`File Change Follower: Could not open ${change.uri.fsPath}:`, error);
+        }
+    }
+
+    private getOpenTabs(): vscode.Tab[] {
+        return vscode.window.tabGroups.all.flatMap(group => [...group.tabs]);
+    }
+
+    private clearAutoOpenedTabs(): void {
+        this.autoOpenedTabs.clear();
+        this.tabTrackingGeneration++;
+    }
+
+    private async closeOtherAutoOpenedTabs(currentTab: vscode.Tab, session: number, trackingGeneration: number): Promise<void> {
+        for (const [tab, group] of this.autoOpenedTabs) {
+            if (!this.isCurrentSession(session) || !this.configManager.autoCloseOnSwitch
+                || trackingGeneration !== this.tabTrackingGeneration) {
+                return;
+            }
+            if (tab === currentTab) {
+                continue;
+            }
+
+            const openTabs = this.getOpenTabs();
+            if (!openTabs.includes(currentTab)) {
+                return;
+            }
+            if (!openTabs.includes(tab) || tab.isDirty || tab.isPinned || tab.group !== group) {
+                this.autoOpenedTabs.delete(tab);
+                continue;
+            }
+
+            const label = tab.label;
+            try {
+                if (await vscode.window.tabGroups.close(tab, true)) {
+                    this.autoOpenedTabs.delete(tab);
+                } else {
+                    console.log(`File Change Follower: Could not close tab ${label}: close was cancelled`);
+                }
+            } catch (error) {
+                console.log(`File Change Follower: Could not close tab ${label}:`, error);
+            }
         }
     }
 

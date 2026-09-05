@@ -150,6 +150,11 @@
           "default": true,
           "description": "Automatically disable follow mode when a manual edit is made in the editor"
         },
+        "fileChangeFollower.autoCloseOnSwitch": {
+          "type": "boolean",
+          "default": false,
+          "description": "Close other tabs opened by live follow mode after showing the next changed file. Existing tabs, tabs opened manually, and dirty or explicitly pinned tabs are preserved. Does not affect recording playback."
+        },
         "fileChangeFollower.debounceMs": {
           "type": "number",
           "default": 150,

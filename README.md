@@ -84,6 +84,7 @@ Configure the extension in VS Code settings:
 | `fileChangeFollower.includePatterns` | `["**/*"]` | Glob patterns for files to include |
 | `fileChangeFollower.excludePatterns` | `["**/node_modules/**", "**/.git/**", ...]` | Glob patterns for files to exclude |
 | `fileChangeFollower.respectGitignore` | `true` | Ignore files listed in .gitignore |
+| `fileChangeFollower.autoCloseOnSwitch` | `false` | Close other eligible tabs opened by live follow mode when showing the next changed file |
 | `fileChangeFollower.debounceMs` | `150` | Debounce interval (0-2000ms) |
 | `fileChangeFollower.highlightDuration` | `2000` | How long to highlight changes (0 to disable) |
 | `fileChangeFollower.recordingsPath` | `".recordings"` | Directory for saved recordings |
@@ -102,12 +103,31 @@ Configure the extension in VS Code settings:
     "**/out/**"
   ],
   "fileChangeFollower.debounceMs": 150,
+  "fileChangeFollower.autoCloseOnSwitch": false,
   "fileChangeFollower.highlightDuration": 2000,
   "fileChangeFollower.recordingsPath": ".recordings",
   "fileChangeFollower.liveDelaySeconds": 5,
   "fileChangeFollower.defaultPlaybackSpeed": 1
 }
 ```
+
+### Automatically Close Follow Tabs
+
+Set `fileChangeFollower.autoCloseOnSwitch` to `true` to keep only the current
+eligible follow tab open. Other tabs opened by live follow mode close only after
+the next changed file is successfully shown. The last followed file stays open
+when changes stop or follow mode is disabled.
+
+Tabs that were already open (including background tabs and other editor groups),
+tabs opened manually during following, and user-created splits are preserved.
+Editing, explicitly pinning, or moving a follow tab to another group takes it out
+of automatic cleanup, even if it is later saved or unpinned. Closing a tab and
+reopening it manually also protects it.
+
+Turning this setting or follow mode off clears tab ownership without closing
+anything. Turning it back on only manages newly opened follow tabs. This setting
+does not pause navigation while reviewing a file and does not affect recording
+playback.
 
 ## Recording & Playback
 
