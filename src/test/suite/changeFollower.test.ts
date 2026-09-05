@@ -202,3 +202,87 @@ suite('ChangeFollower Auto-Disable Test Suite', () => {
         disposable.dispose();
     });
 });
+
+suite('ChangeFollower Lifecycle Test Suite', () => {
+    let changeFollower: ChangeFollower;
+    let tempDir: string;
+    let uri: vscode.Uri;
+    const disposables: vscode.Disposable[] = [];
+
+    setup(() => {
+        const configManager = new class extends ConfigurationManager {
+            override get highlightDuration(): number {
+                return 2000;
+            }
+        }();
+        changeFollower = new ChangeFollower(configManager);
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fcf-lifecycle-test-'));
+        uri = vscode.Uri.file(path.join(tempDir, 'change.txt'));
+        fs.writeFileSync(uri.fsPath, 'changed content');
+    });
+
+    teardown(async () => {
+        for (const disposable of disposables) {
+            disposable.dispose();
+        }
+        disposables.length = 0;
+        changeFollower.dispose();
+
+        const tabs = vscode.window.tabGroups.all.flatMap(group => group.tabs).filter(
+            tab => tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === uri.toString()
+        );
+        await vscode.window.tabGroups.close(tabs, true);
+        await fs.promises.rm(tempDir, { recursive: true, maxRetries: 5, retryDelay: 100 });
+    });
+
+    function showChange(): Promise<void> {
+        return changeFollower['showChange']({
+            uri,
+            ranges: [new vscode.Range(0, 0, 0, 0)],
+            timestamp: Date.now()
+        });
+    }
+
+    test('Should not open a document when already disabled', async () => {
+        await showChange();
+
+        assert.strictEqual(vscode.workspace.textDocuments.some(doc => doc.uri.toString() === uri.toString()), false);
+    });
+
+    test('Should not show a document when disabled while opening it', async () => {
+        changeFollower.enable();
+        disposables.push(vscode.workspace.onDidOpenTextDocument(document => {
+            if (document.uri.toString() === uri.toString()) {
+                changeFollower.disable(true);
+            }
+        }));
+
+        await showChange();
+
+        assert.strictEqual(changeFollower.isEnabled, false);
+        assert.strictEqual(vscode.window.visibleTextEditors.some(editor => editor.document.uri.toString() === uri.toString()), false);
+    });
+
+    test('Should not highlight an editor when disabled while showing it', async () => {
+        changeFollower.enable();
+        disposables.push(vscode.window.onDidChangeVisibleTextEditors(editors => {
+            if (editors.some(editor => editor.document.uri.toString() === uri.toString())) {
+                changeFollower.disable(true);
+            }
+        }));
+
+        await showChange();
+
+        assert.strictEqual(changeFollower.isEnabled, false);
+        assert.strictEqual(changeFollower['activeHighlights'].size, 0);
+    });
+
+    test('Should still show and highlight changes while enabled', async () => {
+        changeFollower.enable();
+
+        await showChange();
+
+        assert.ok(vscode.window.visibleTextEditors.some(editor => editor.document.uri.toString() === uri.toString()));
+        assert.ok(changeFollower['activeHighlights'].has(uri.toString()));
+    });
+});

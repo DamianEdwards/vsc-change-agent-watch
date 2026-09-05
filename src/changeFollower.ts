@@ -376,9 +376,12 @@ export class ChangeFollower implements vscode.Disposable {
         return this._isEnabled && this.followSession === session;
     }
 
-    private async showChange(change: PendingChange, session: number): Promise<void> {
+    private async showChange(change: PendingChange, session = this.followSession): Promise<void> {
         try {
-            // Open the document
+            if (!this.isCurrentSession(session)) {
+                return;
+            }
+
             const document = await vscode.workspace.openTextDocument(change.uri);
             if (!this.isCurrentSession(session)) {
                 return;
@@ -396,19 +399,16 @@ export class ChangeFollower implements vscode.Disposable {
                 preview: false,
                 preserveFocus: true
             });
-            if (!this.isCurrentSession(session)) {
+            if (!this.isCurrentSession(session) || !vscode.window.visibleTextEditors.includes(editor)) {
                 return;
             }
 
-            // Find the best range to reveal (prefer last change)
             const rangeToReveal = change.ranges.length > 0 
                 ? change.ranges[change.ranges.length - 1]
                 : new vscode.Range(0, 0, 0, 0);
 
-            // Scroll to the change
             editor.revealRange(rangeToReveal, vscode.TextEditorRevealType.InCenter);
 
-            // Highlight the changed lines
             if (this.configManager.highlightDuration > 0 && this.highlightDecorationType) {
                 this.applyHighlight(editor, change.ranges);
             }
@@ -426,7 +426,6 @@ export class ChangeFollower implements vscode.Disposable {
                 }
             }
         } catch (error) {
-            // File might have been deleted or is binary
             console.log(`File Change Follower: Could not open ${change.uri.fsPath}:`, error);
         }
     }
