@@ -33,6 +33,10 @@ export class ConfigurationManager {
         return this.config.get<boolean>('disableOnManualEdit', true);
     }
 
+    get autoCloseOnSwitch(): boolean {
+        return this.config.get<boolean>('autoCloseOnSwitch', false);
+    }
+
     get debounceMs(): number {
         return this.config.get<number>('debounceMs', 150);
     }
